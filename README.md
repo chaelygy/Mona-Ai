@@ -1,4 +1,4 @@
-# MONA AI • Atelier Biométrique & Pengenalan Wajah
+# MONA AI • Sistem Pengenalan Wajah & Biometrik
 
 Sistem Pengenalan Wajah Berbasis Deep Learning dengan Estetika Haute Couture Crimson & Imperial Gold, didukung oleh RetinaFace dan Facenet 512D.
 

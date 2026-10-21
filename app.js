@@ -32,10 +32,10 @@ const JPEG_QUALITY = 0.86;
 function configureServerUrl() {
     const current = localStorage.getItem('faceid_backend_url') || API_BASE;
     const input = prompt(
-        "MONA AI &bull; Configuration du Serveur Backend:\n" +
-        "• Serveur Local: http://localhost:5000\n" +
-        "• Lien Tunnel Cloudflare: https://xxxx.trycloudflare.com\n\n" +
-        "URL Actuelle:",
+        "MONA AI • Konfigurasi Server Backend:\n" +
+        "• Server Lokal: http://localhost:5000\n" +
+        "• URL Cloudflare Tunnel: https://xxxx.trycloudflare.com\n\n" +
+        "URL Saat Ini:",
         current
     );
     if (input !== null) {
@@ -172,7 +172,7 @@ async function checkServerHealth() {
 
     if (data) {
         const count = data.persons_count || data.registered_persons_count || '24';
-        updateServerStatus(true, `Connecté (${count} ID)`);
+        updateServerStatus(true, `Terhubung (${count} Orang)`);
         if (elements.statPersons) {
             elements.statPersons.textContent = count;
         }
@@ -180,7 +180,7 @@ async function checkServerHealth() {
             loadPersons();
         }
     } else {
-        updateServerStatus(false, 'Déconnecté (Klik untuk Atur URL)');
+        updateServerStatus(false, 'Terputus (Klik untuk Atur URL)');
     }
 }
 
@@ -211,7 +211,7 @@ async function loadPersons() {
 function renderPersonsList(persons) {
     if (!elements.personsList) return;
     if (persons.length === 0) {
-        elements.personsList.innerHTML = `<div class="loading-velvet">Aucune identité enregistrée</div>`;
+        elements.personsList.innerHTML = `<div class="loading-velvet">Belum ada identitas terdaftar</div>`;
         return;
     }
     elements.personsList.innerHTML = persons.map(p => `
@@ -238,14 +238,14 @@ function switchMode(mode) {
         elements.webcamWrapper.classList.remove('hidden');
         elements.uploadWrapper.classList.add('hidden');
         elements.webcamControls.classList.remove('hidden');
-        elements.panelTitle.textContent = 'Cadre Optique En Direct';
+        elements.panelTitle.textContent = 'Tampilan Kamera Langsung';
     } else {
         elements.btnUpload.classList.add('active');
         elements.btnWebcam.classList.remove('active');
         elements.webcamWrapper.classList.add('hidden');
         elements.uploadWrapper.classList.remove('hidden');
         elements.webcamControls.classList.add('hidden');
-        elements.panelTitle.textContent = 'Galerie Portrait';
+        elements.panelTitle.textContent = 'Unggah Foto / Gambar';
         if (webcamActive) stopWebcam();
     }
     clearResults();
@@ -275,7 +275,7 @@ async function startWebcam() {
             startCaptureLoop();
         };
     } catch (err) {
-        alert('Impossible d\'accéder à la caméra: ' + err.message);
+        alert('Gagal mengakses kamera: ' + err.message);
     }
 }
 
@@ -333,7 +333,7 @@ function handleFileUpload(event) {
 
 function processUploadedFile(file) {
     if (!file.type.startsWith('image/')) {
-        alert('Le fichier doit être une image (JPG, PNG, WEBP).');
+        alert('File harus berupa gambar (JPG, PNG, WEBP).');
         return;
     }
     const reader = new FileReader();
@@ -387,7 +387,7 @@ async function sendForRecognition(imageData, source) {
             }
         }
     } catch (err) {
-        console.error('Erreur réseau:', err);
+        console.error('Kendala koneksi server:', err);
     } finally {
         isProcessing = false;
         if (elements.processingIndicator) elements.processingIndicator.classList.add('hidden');
@@ -456,7 +456,7 @@ function drawBoundingBoxes(canvas, faces, isMirrored) {
         // Ornate Label
         const label = isRecognized 
             ? `${face.name} &bull; ${face.confidence}%` 
-            : 'NON CERTIFIÉ';
+            : 'TIDAK DIKENAL';
         
         ctx.font = `600 ${Math.max(13, bw * 0.058)}px "Plus Jakarta Sans", sans-serif`;
         const textMetrics = ctx.measureText(label.replace('&bull;', '•'));
@@ -494,7 +494,7 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 function displayResults(faces, processingTime) {
-    if (elements.faceCount) elements.faceCount.textContent = `${faces.length} Visage${faces.length > 1 ? 's' : ''}`;
+    if (elements.faceCount) elements.faceCount.textContent = `${faces.length} Wajah Terdeteksi`;
     if (elements.perfTime) elements.perfTime.textContent = `${Math.round(processingTime)} ms`;
 
     if (!elements.resultsList) return;
@@ -502,8 +502,8 @@ function displayResults(faces, processingTime) {
         elements.resultsList.innerHTML = `
             <div class="mona-idle-box">
                 <div class="idle-rose-icon">&#10022;</div>
-                <h3>Aucun Visage Détecté</h3>
-                <p>Assurez-vous que le sujet est bien illuminé et centré face au miroir optique.</p>
+                <h3>Tidak Ada Wajah Terdeteksi</h3>
+                <p>Pastikan wajah terlihat jelas dan menghadap kamera dengan pencahayaan cukup.</p>
             </div>
         `;
         return;
@@ -519,7 +519,7 @@ function displayResults(faces, processingTime) {
         const isRecognized = face.name !== 'Unknown';
         const cardClass = isRecognized ? 'recognized' : 'unknown';
         const initials = isRecognized ? getInitials(face.name) : '?';
-        const statusBadge = isRecognized ? 'CERTIFIÉ' : 'NON CERTIFIÉ';
+        const statusBadge = isRecognized ? 'TERVERIFIKASI' : 'TIDAK DIKENAL';
 
         return `
             <div class="mona-result-card ${cardClass}">
@@ -528,14 +528,14 @@ function displayResults(faces, processingTime) {
                         <div class="card-seal-avatar">${initials}</div>
                         <div>
                             <div class="card-subject-name">${escapeHtml(face.name)}</div>
-                            <span style="font-size: 0.65rem; color: #9f1239;">Matricule Biométrique</span>
+                            <span style="font-size: 0.65rem; color: #9f1239;">Identitas Biometrik</span>
                         </div>
                     </div>
                     <span class="card-cert-badge">${statusBadge}</span>
                 </div>
                 <div class="card-metrics-row">
-                    <span class="metric-accuracy">Précision: ${face.confidence}%</span>
-                    <span class="metric-distance">Indice Cosine: ${face.distance}</span>
+                    <span class="metric-accuracy">Akurasi: ${face.confidence}%</span>
+                    <span class="metric-distance">Jarak Cosine: ${face.distance}</span>
                 </div>
                 ${isRecognized ? `
                     <div class="card-gold-bar-container">
@@ -548,14 +548,14 @@ function displayResults(faces, processingTime) {
 }
 
 function clearResults() {
-    if (elements.faceCount) elements.faceCount.textContent = '0 Visage';
+    if (elements.faceCount) elements.faceCount.textContent = '0 Wajah Terdeteksi';
     if (elements.perfTime) elements.perfTime.textContent = '0 ms';
     if (elements.resultsList) {
         elements.resultsList.innerHTML = `
             <div class="mona-idle-box" id="emptyState">
                 <div class="idle-rose-icon">&#10022;</div>
-                <h3>En Attente de Visage</h3>
-                <p>Placez votre visage face au miroir ou importez une photographie pour révéler l'identité certifiée.</p>
+                <h3>Menunggu Deteksi Wajah</h3>
+                <p>Arahkan wajah Anda ke kamera atau unggah foto untuk mendeteksi identitas secara instan.</p>
             </div>
         `;
     }

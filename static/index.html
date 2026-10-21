@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MONA AI &bull; Atelier Biometrik & Pengenalan Wajah</title>
+    <title>MONA AI &bull; Sistem Pengenalan Wajah & Biometrik</title>
     <meta name="description" content="Sistem Pengenalan Wajah AI Mewah Bernuansa Merah Maroon & Emas Sampanye berbasis RetinaFace dan Facenet 512D">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,24 +25,24 @@
                 </div>
                 <div class="brand-titles">
                     <h1 class="brand-name">MONA <span class="gold-text">AI</span></h1>
-                    <span class="brand-tagline">ATELIER BIOMÉTRIQUE &bull; ÉDITION MAROON</span>
+                    <span class="brand-tagline">PENGENALAN WAJAH BIOMETRIK &bull; EDISI MAROON</span>
                 </div>
             </div>
 
             <!-- Central Editorial Nav Badges -->
             <div class="atelier-spec-bar">
                 <div class="spec-item">
-                    <span class="spec-label">Écrin</span>
+                    <span class="spec-label">Detektor</span>
                     <span class="spec-val">RetinaFace High-Res</span>
                 </div>
                 <div class="spec-divider">&bull;</div>
                 <div class="spec-item">
-                    <span class="spec-label">Vecteur</span>
+                    <span class="spec-label">Model</span>
                     <span class="spec-val">Facenet 512D</span>
                 </div>
                 <div class="spec-divider">&bull;</div>
                 <div class="spec-item">
-                    <span class="spec-label">Tolérance</span>
+                    <span class="spec-label">Threshold</span>
                     <span class="spec-val gold-text">Cosine 0.42</span>
                 </div>
             </div>
@@ -52,7 +52,7 @@
                 <div class="archive-pill">
                     <span class="archive-icon">&#9670;</span>
                     <span class="archive-count" id="statPersons">24</span>
-                    <span class="archive-label">Identités</span>
+                    <span class="archive-label">Wajah Terdaftar</span>
                 </div>
 
                 <div class="server-pill" id="navStatus" onclick="configureServerUrl()" title="Pengaturan Server Backend">
@@ -67,16 +67,16 @@
             <div class="mode-tabs">
                 <button class="mode-btn active" id="btnWebcam" onclick="switchMode('webcam')">
                     <span class="mode-icon">&#9678;</span>
-                    <span>MIROIR LIVE (KAMERA)</span>
+                    <span>KAMERA LANGSUNG</span>
                 </button>
                 <button class="mode-btn" id="btnUpload" onclick="switchMode('upload')">
                     <span class="mode-icon">&#9651;</span>
-                    <span>PORTRAIT GALERIE (UPLOAD)</span>
+                    <span>UNGGAH FOTO</span>
                 </button>
             </div>
 
             <div class="editorial-quote">
-                &ldquo;Précision Biométrique d'Élite &amp; Reconnaissance Instantanée&rdquo;
+                &ldquo;Sistem Pengenalan Wajah Presisi Tinggi &amp; Deteksi Biometrik Real-Time&rdquo;
             </div>
         </div>
 
@@ -93,7 +93,7 @@
                 <div class="mirror-header">
                     <div class="mirror-title-group">
                         <span class="gold-roman">I.</span>
-                        <h2 id="panelTitle">Cadre Optique En Direct</h2>
+                        <h2 id="panelTitle">Tampilan Kamera Langsung</h2>
                     </div>
 
                     <div class="mirror-action-buttons" id="webcamControls">
@@ -101,13 +101,13 @@
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                                 <polygon points="5 3 19 12 5 21 5 3"/>
                             </svg>
-                            <span>Activer le Miroir</span>
+                            <span>Nyalakan Kamera</span>
                         </button>
                         <button class="btn-ruby-danger hidden" id="btnStopCam" onclick="stopWebcam()">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                                 <rect x="6" y="6" width="12" height="12"/>
                             </svg>
-                            <span>Suspendre</span>
+                            <span>Hentikan Kamera</span>
                         </button>
                     </div>
                 </div>
@@ -129,9 +129,9 @@
                             <div class="mirror-monogram-ring">
                                 <span class="ring-crest">&#10047;</span>
                             </div>
-                            <h3>MIROIR EN ATTENTE</h3>
-                            <p>Activez la caméra pour commencer l'analyse biometrique haute couture Mona AI</p>
-                            <button class="btn-gilded-gold" onclick="startWebcam()">LANCER LA DÉTECTION</button>
+                            <h3>KAMERA BELUM AKTIF</h3>
+                            <p>Klik tombol di bawah untuk menyalakan kamera dan memulai pemindaian wajah otomatis.</p>
+                            <button class="btn-gilded-gold" onclick="startWebcam()">NYALAKAN KAMERA</button>
                         </div>
                     </div>
 
@@ -140,16 +140,16 @@
                         <div class="editorial-upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
                             <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileUpload(event)">
                             <div class="upload-gold-crest">&#9825;</div>
-                            <h3>IMPORTER UN PORTRAIT</h3>
-                            <p>Déposez une photographie ou cliquez pour parcourir les fichiers</p>
-                            <span class="upload-note">Formats supportés: JPG, PNG, WEBP &bull; Max 10 Mo</span>
+                            <h3>UNGGAH FOTO / GAMBAR</h3>
+                            <p>Tarik dan letakkan foto di sini, atau klik untuk memilih file</p>
+                            <span class="upload-note">Format yang didukung: JPG, PNG, WEBP &bull; Maksimal 10 MB</span>
                         </div>
 
                         <div class="upload-result-container hidden" id="uploadedPreview">
                             <img id="uploadedImage" alt="Portrait">
                             <canvas id="uploadOverlayCanvas"></canvas>
                             <button class="btn-eject-portrait" onclick="removeUpload()">
-                                &#10005; Retirer la photo
+                                &#10005; Hapus Foto
                             </button>
                         </div>
                     </div>
@@ -157,10 +157,10 @@
                     <!-- Mirror Footnote -->
                     <div class="mirror-footer">
                         <div class="mirror-spec-pill">
-                            <span>Flux Haute Définition</span>
+                            <span>Aliran Resolusi Tinggi HD</span>
                         </div>
                         <div class="latency-indicator">
-                            Vitesse d'Inférence: <span id="perfTime">0 ms</span>
+                            Kecepatan Analisis: <span id="perfTime">0 ms</span>
                         </div>
                     </div>
                 </div>
@@ -177,26 +177,26 @@
                 <div class="dossier-header">
                     <div class="dossier-title-group">
                         <span class="gold-roman">II.</span>
-                        <h2>Résultats Biométriques</h2>
+                        <h2>Hasil Pengenalan Wajah</h2>
                     </div>
 
                     <div class="face-count-tag" id="faceCount">
-                        0 Visage
+                        0 Wajah Terdeteksi
                     </div>
                 </div>
 
                 <!-- Processing Velvet Bar -->
                 <div class="analysis-ruby-loader hidden" id="processingIndicator">
                     <div class="ruby-pulse-orb"></div>
-                    <span>Analyse vectorielle 512D en cours...</span>
+                    <span>Sedang menganalisis biometrik wajah (Facenet 512D)...</span>
                 </div>
 
                 <!-- Verified Results List -->
                 <div class="results-scroll-container" id="resultsList">
                     <div class="mona-idle-box" id="emptyState">
                         <div class="idle-rose-icon">&#10022;</div>
-                        <h3>En Attente de Visage</h3>
-                        <p>Placez votre visage face au miroir ou importez une photographie pour révéler l'identité certifiée.</p>
+                        <h3>Menunggu Deteksi Wajah</h3>
+                        <p>Arahkan wajah Anda ke kamera atau unggah foto untuk mendeteksi identitas secara instan.</p>
                     </div>
                 </div>
 
@@ -205,18 +205,18 @@
                     <div class="archive-section-header">
                         <div class="archive-title">
                             <span class="gold-text">&#9670;</span>
-                            <h3>Registre des Identités</h3>
+                            <h3>Daftar Orang Terdaftar</h3>
                         </div>
-                        <button class="btn-refresh-gold" id="btnRefreshDb" onclick="loadPersons()">Actualiser</button>
+                        <button class="btn-refresh-gold" id="btnRefreshDb" onclick="loadPersons()">Segarkan</button>
                     </div>
 
                     <div class="archive-search-box">
                         <span class="search-ornament">&#9906;</span>
-                        <input type="text" id="searchPersons" placeholder="Rechercher une identité...">
+                        <input type="text" id="searchPersons" placeholder="Cari nama orang...">
                     </div>
 
                     <div class="archive-roster" id="personsList">
-                        <div class="loading-velvet">Chargement du registre...</div>
+                        <div class="loading-velvet">Memuat daftar nama...</div>
                     </div>
                 </div>
             </section>
