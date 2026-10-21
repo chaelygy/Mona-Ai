@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MONA AI &bull; Atelier Biometrik & Pengenalan Wajah</title>
+    <meta name="description" content="Sistem Pengenalan Wajah AI Mewah Bernuansa Merah Maroon & Emas Sampanye berbasis RetinaFace dan Facenet 512D">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="mona-atelier-body">
+    <!-- Ambient Ruby Velvet Glow Background -->
+    <div class="maroon-ambient-light light-1"></div>
+    <div class="maroon-ambient-light light-2"></div>
+    <div class="velvet-texture-overlay"></div>
+
+    <div class="atelier-wrapper">
+        <!-- Luxury Haute Couture Header -->
+        <header class="atelier-header">
+            <div class="atelier-brand">
+                <div class="brand-crest">
+                    <span class="crest-letter">M</span>
+                </div>
+                <div class="brand-titles">
+                    <h1 class="brand-name">MONA <span class="gold-text">AI</span></h1>
+                    <span class="brand-tagline">ATELIER BIOMÉTRIQUE &bull; ÉDITION MAROON</span>
+                </div>
+            </div>
+
+            <!-- Central Editorial Nav Badges -->
+            <div class="atelier-spec-bar">
+                <div class="spec-item">
+                    <span class="spec-label">Écrin</span>
+                    <span class="spec-val">RetinaFace High-Res</span>
+                </div>
+                <div class="spec-divider">&bull;</div>
+                <div class="spec-item">
+                    <span class="spec-label">Vecteur</span>
+                    <span class="spec-val">Facenet 512D</span>
+                </div>
+                <div class="spec-divider">&bull;</div>
+                <div class="spec-item">
+                    <span class="spec-label">Tolérance</span>
+                    <span class="spec-val gold-text">Cosine 0.42</span>
+                </div>
+            </div>
+
+            <!-- Server Link & Vault Indicator -->
+            <div class="atelier-nav-actions">
+                <div class="archive-pill">
+                    <span class="archive-icon">&#9670;</span>
+                    <span class="archive-count" id="statPersons">24</span>
+                    <span class="archive-label">Identités</span>
+                </div>
+
+                <div class="server-pill" id="navStatus" onclick="configureServerUrl()" title="Pengaturan Server Backend">
+                    <span class="ruby-status-dot offline"></span>
+                    <span class="ruby-status-text">Menghubungkan...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Mode Switcher -->
+        <div class="editorial-mode-selector">
+            <div class="mode-tabs">
+                <button class="mode-btn active" id="btnWebcam" onclick="switchMode('webcam')">
+                    <span class="mode-icon">&#9678;</span>
+                    <span>MIROIR LIVE (KAMERA)</span>
+                </button>
+                <button class="mode-btn" id="btnUpload" onclick="switchMode('upload')">
+                    <span class="mode-icon">&#9651;</span>
+                    <span>PORTRAIT GALERIE (UPLOAD)</span>
+                </button>
+            </div>
+
+            <div class="editorial-quote">
+                &ldquo;Précision Biométrique d'Élite &amp; Reconnaissance Instantanée&rdquo;
+            </div>
+        </div>
+
+        <!-- Main Atelier Workspace: 2 Balanced Luxury Columns -->
+        <main class="atelier-stage">
+            <!-- Left Column: The Portrait Mirror Viewport -->
+            <section class="mirror-card">
+                <div class="card-ornament top-ornament">
+                    <span class="ornament-line"></span>
+                    <span class="ornament-diamond">&#9670;</span>
+                    <span class="ornament-line"></span>
+                </div>
+
+                <div class="mirror-header">
+                    <div class="mirror-title-group">
+                        <span class="gold-roman">I.</span>
+                        <h2 id="panelTitle">Cadre Optique En Direct</h2>
+                    </div>
+
+                    <div class="mirror-action-buttons" id="webcamControls">
+                        <button class="btn-ruby-primary" id="btnStartCam" onclick="startWebcam()">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                                <polygon points="5 3 19 12 5 21 5 3"/>
+                            </svg>
+                            <span>Activer le Miroir</span>
+                        </button>
+                        <button class="btn-ruby-danger hidden" id="btnStopCam" onclick="stopWebcam()">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                                <rect x="6" y="6" width="12" height="12"/>
+                            </svg>
+                            <span>Suspendre</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mirror Viewport Box -->
+                <div class="mirror-viewport" id="videoContainer">
+                    <div class="gilded-corner corner-tl"></div>
+                    <div class="gilded-corner corner-tr"></div>
+                    <div class="gilded-corner corner-bl"></div>
+                    <div class="gilded-corner corner-br"></div>
+
+                    <!-- Webcam Mirror -->
+                    <div class="mirror-layer" id="webcamWrapper">
+                        <video id="webcamVideo" autoplay playsinline muted></video>
+                        <canvas id="overlayCanvas"></canvas>
+                        <div class="crimson-scan-glow" id="scanLine"></div>
+
+                        <div class="mirror-idle-screen" id="videoPlaceholder">
+                            <div class="mirror-monogram-ring">
+                                <span class="ring-crest">&#10047;</span>
+                            </div>
+                            <h3>MIROIR EN ATTENTE</h3>
+                            <p>Activez la caméra pour commencer l'analyse biometrique haute couture Mona AI</p>
+                            <button class="btn-gilded-gold" onclick="startWebcam()">LANCER LA DÉTECTION</button>
+                        </div>
+                    </div>
+
+                    <!-- Upload Mirror -->
+                    <div class="upload-layer hidden" id="uploadWrapper">
+                        <div class="editorial-upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                            <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileUpload(event)">
+                            <div class="upload-gold-crest">&#9825;</div>
+                            <h3>IMPORTER UN PORTRAIT</h3>
+                            <p>Déposez une photographie ou cliquez pour parcourir les fichiers</p>
+                            <span class="upload-note">Formats supportés: JPG, PNG, WEBP &bull; Max 10 Mo</span>
+                        </div>
+
+                        <div class="upload-result-container hidden" id="uploadedPreview">
+                            <img id="uploadedImage" alt="Portrait">
+                            <canvas id="uploadOverlayCanvas"></canvas>
+                            <button class="btn-eject-portrait" onclick="removeUpload()">
+                                &#10005; Retirer la photo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mirror Footnote -->
+                    <div class="mirror-footer">
+                        <div class="mirror-spec-pill">
+                            <span>Flux Haute Définition</span>
+                        </div>
+                        <div class="latency-indicator">
+                            Vitesse d'Inférence: <span id="perfTime">0 ms</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Column: Luxury Dossier & Identity Archive -->
+            <section class="dossier-card">
+                <div class="card-ornament top-ornament">
+                    <span class="ornament-line"></span>
+                    <span class="ornament-diamond gold-text">&#9670;</span>
+                    <span class="ornament-line"></span>
+                </div>
+
+                <div class="dossier-header">
+                    <div class="dossier-title-group">
+                        <span class="gold-roman">II.</span>
+                        <h2>Résultats Biométriques</h2>
+                    </div>
+
+                    <div class="face-count-tag" id="faceCount">
+                        0 Visage
+                    </div>
+                </div>
+
+                <!-- Processing Velvet Bar -->
+                <div class="analysis-ruby-loader hidden" id="processingIndicator">
+                    <div class="ruby-pulse-orb"></div>
+                    <span>Analyse vectorielle 512D en cours...</span>
+                </div>
+
+                <!-- Verified Results List -->
+                <div class="results-scroll-container" id="resultsList">
+                    <div class="mona-idle-box" id="emptyState">
+                        <div class="idle-rose-icon">&#10022;</div>
+                        <h3>En Attente de Visage</h3>
+                        <p>Placez votre visage face au miroir ou importez une photographie pour révéler l'identité certifiée.</p>
+                    </div>
+                </div>
+
+                <!-- Luxury Identity Registry -->
+                <div class="archive-section">
+                    <div class="archive-section-header">
+                        <div class="archive-title">
+                            <span class="gold-text">&#9670;</span>
+                            <h3>Registre des Identités</h3>
+                        </div>
+                        <button class="btn-refresh-gold" id="btnRefreshDb" onclick="loadPersons()">Actualiser</button>
+                    </div>
+
+                    <div class="archive-search-box">
+                        <span class="search-ornament">&#9906;</span>
+                        <input type="text" id="searchPersons" placeholder="Rechercher une identité...">
+                    </div>
+
+                    <div class="archive-roster" id="personsList">
+                        <div class="loading-velvet">Chargement du registre...</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
