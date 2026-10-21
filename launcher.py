@@ -91,7 +91,11 @@ def update_appjs_and_push(new_url):
         print(f"[Vercel Sync] Catatan: {e}")
 
 def main():
-    os.system("color 0A" if os.name == "nt" else "")
+    try:
+        if os.name == "nt" and hasattr(sys.stdout, "isatty") and sys.stdout.isatty():
+            os.system("color 0A")
+    except Exception:
+        pass
     print("=" * 65)
     print("       SISTEM PENGENALAN WAJAH (MONA AI) - SMART AUTO LAUNCHER")
     print("=" * 65)
@@ -193,32 +197,35 @@ def main():
     # Keep alive and print remaining logs
     try:
         while True:
-            # Pastikan backend tetap hidup jika crash
-            if 'p_app' in locals() and p_app is not None and p_app.poll() is not None:
-                print(f"\n[RESTART] Backend app.py terhenti. Menyalakan ulang...")
-                p_app = subprocess.Popen([sys.executable, "app.py"], cwd=BASE_DIR)
-                processes = [p for p in processes if p != p_app] + [p_app]
+            try:
+                # Pastikan backend tetap hidup jika crash
+                if 'p_app' in locals() and p_app is not None and p_app.poll() is not None:
+                    print(f"\n[RESTART] Backend app.py terhenti. Menyalakan ulang...")
+                    p_app = subprocess.Popen([sys.executable, "app.py"], cwd=BASE_DIR)
+                    processes = [p for p in processes if p != p_app] + [p_app]
 
-            # Pastikan tunnel tetap hidup jika terputus
-            if p_tunnel.poll() is not None:
-                print(f"\n[RESTART] Cloudflare Tunnel terputus. Menghubungkan ulang...")
-                p_tunnel = subprocess.Popen(
-                    [CLOUDFLARED_EXE, "tunnel", "--url", "http://localhost:5000"],
-                    cwd=BASE_DIR,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    bufsize=1
-                )
-                processes = [p for p in processes if p != p_tunnel] + [p_tunnel]
+                # Pastikan tunnel tetap hidup jika terputus
+                if p_tunnel.poll() is not None:
+                    print(f"\n[RESTART] Cloudflare Tunnel terputus. Menghubungkan ulang...")
+                    p_tunnel = subprocess.Popen(
+                        [CLOUDFLARED_EXE, "tunnel", "--url", "http://localhost:5000"],
+                        cwd=BASE_DIR,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,
+                        bufsize=1
+                    )
+                    processes = [p for p in processes if p != p_tunnel] + [p_tunnel]
 
-            # Baca log tunnel bila ada
-            line = p_tunnel.stdout.readline() if (p_tunnel and p_tunnel.stdout) else ""
-            if line:
-                if "ERR" in line or "failed" in line:
-                    print(f"[TUNNEL] {line.strip()}")
-            else:
-                time.sleep(0.5)
+                # Baca log tunnel bila ada
+                line = p_tunnel.stdout.readline() if (p_tunnel and p_tunnel.stdout) else ""
+                if line:
+                    if "ERR" in line or "failed" in line:
+                        print(f"[TUNNEL] {line.strip()}")
+                else:
+                    time.sleep(0.5)
+            except Exception:
+                time.sleep(1)
     except KeyboardInterrupt:
         cleanup()
 
