@@ -5,7 +5,7 @@
  * =====================================================================
  */
 
-const CLOUD_BACKEND_URL = 'https://features-architectural-anthony-posted.trycloudflare.com';
+const CLOUD_BACKEND_URL = 'https://floor-anonymous-cookbook-toner.trycloudflare.com';
 
 const isFileProtocol = window.location.protocol === 'file:';
 const isLocal = Boolean(
