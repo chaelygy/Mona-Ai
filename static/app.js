@@ -116,29 +116,71 @@ function setupEventListeners() {
         });
     }
 
+    if (elements.navStatus) {
+        elements.navStatus.style.cursor = 'pointer';
+        elements.navStatus.title = 'Klik untuk konfigurasi URL Server Backend';
+        elements.navStatus.addEventListener('click', configureServerUrl);
+    }
+
     window.addEventListener('resize', () => {
         if (webcamActive) syncCanvasSize();
     });
 }
 
-async function checkServerHealth() {
+async function tryPingServer(url) {
+    if (!url) return null;
+    const cleanUrl = url.replace(/\/$/, '');
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000);
-        const res = await fetch(`${API_BASE}/api/health`, { signal: controller.signal });
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const res = await fetch(`${cleanUrl}/api/health`, { signal: controller.signal });
         clearTimeout(timeoutId);
+        if (res.ok) return await res.json();
+    } catch (e) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3500);
+            const res = await fetch(`${cleanUrl}/api/status`, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (res.ok) return await res.json();
+        } catch (_) {}
+    }
+    return null;
+}
 
-        if (res.ok) {
-            const data = await res.json();
-            updateServerStatus(true, `Connecté (${data.persons_count || data.registered_persons_count || '24'} ID)`);
-            if (elements.statPersons && (data.persons_count || data.registered_persons_count)) {
-                elements.statPersons.textContent = data.persons_count || data.registered_persons_count;
-            }
-        } else {
-            updateServerStatus(false, 'Erreur Serveur');
+async function checkServerHealth() {
+    // 1. Coba endpoint yang saat ini aktif
+    let data = await tryPingServer(API_BASE);
+
+    // 2. Jika gagal dan bukan localhost, coba cek server lokal http://localhost:5000
+    if (!data && API_BASE !== 'http://localhost:5000') {
+        data = await tryPingServer('http://localhost:5000');
+        if (data) {
+            console.log('[MONA AI] Otomatis terhubung ke server lokal http://localhost:5000');
+            API_BASE = 'http://localhost:5000';
         }
-    } catch (err) {
-        updateServerStatus(false, 'Déconnecté (Configurer)');
+    }
+
+    // 3. Jika masih belum berhasil dan ada CLOUD_BACKEND_URL, coba cloud tunnel
+    if (!data && typeof CLOUD_BACKEND_URL !== 'undefined' && CLOUD_BACKEND_URL && API_BASE !== CLOUD_BACKEND_URL) {
+        data = await tryPingServer(CLOUD_BACKEND_URL);
+        if (data) {
+            console.log('[MONA AI] Otomatis terhubung ke Cloudflare Tunnel:', CLOUD_BACKEND_URL);
+            API_BASE = CLOUD_BACKEND_URL;
+        }
+    }
+
+    if (data) {
+        const count = data.persons_count || data.registered_persons_count || '24';
+        updateServerStatus(true, `Connecté (${count} ID)`);
+        if (elements.statPersons) {
+            elements.statPersons.textContent = count;
+        }
+        if (registeredPersons.length === 0) {
+            loadPersons();
+        }
+    } else {
+        updateServerStatus(false, 'Déconnecté (Klik untuk Atur URL)');
     }
 }
 
