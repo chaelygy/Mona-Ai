@@ -93,10 +93,12 @@ def update_appjs_and_push(new_url):
 def main():
     os.system("color 0A" if os.name == "nt" else "")
     print("=" * 65)
-    print("       SISTEM PENGENALAN WAJAH (KESYA EDITION) - SMART AUTO LAUNCHER")
+    print("       SISTEM PENGENALAN WAJAH (MONA AI) - SMART AUTO LAUNCHER")
     print("=" * 65)
 
     processes = []
+    p_app = None
+    p_tunnel = None
 
     def cleanup(sig=None, frame=None):
         print("\n\n[INFO] Menghentikan semua proses server...")
