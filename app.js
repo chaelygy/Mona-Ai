@@ -5,7 +5,7 @@
  * =====================================================================
  */
 
-const CLOUD_BACKEND_URL = 'https://floor-anonymous-cookbook-toner.trycloudflare.com';
+const CLOUD_BACKEND_URL = 'https://magic-twice-expired-efficient.trycloudflare.com';
 
 const isFileProtocol = window.location.protocol === 'file:';
 const isLocal = Boolean(
