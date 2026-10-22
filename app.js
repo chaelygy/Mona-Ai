@@ -5,7 +5,7 @@
  * =====================================================================
  */
 
-const CLOUD_BACKEND_URL = 'https://magic-twice-expired-efficient.trycloudflare.com';
+const CLOUD_BACKEND_URL = 'https://consist-classic-bracelets-payday.trycloudflare.com';
 
 const isFileProtocol = window.location.protocol === 'file:';
 const isLocal = Boolean(
@@ -26,8 +26,11 @@ if (!isLocal) {
 
 const customApi = localStorage.getItem('faceid_backend_url');
 let API_BASE = (customApi ? customApi.replace(/\/$/, '') : defaultApi);
-const WEBCAM_INTERVAL_MS = 1400;
-const JPEG_QUALITY = 0.86;
+const WEBCAM_INTERVAL_MS = 250;
+const WEBCAM_MAX_WIDTH = 640;
+const JPEG_QUALITY = 0.72;
+let captureCanvas = null;
+let nextCaptureTimer = null;
 
 function configureServerUrl() {
     const current = localStorage.getItem('faceid_backend_url') || API_BASE;
@@ -281,7 +284,14 @@ async function startWebcam() {
 
 function stopWebcam() {
     webcamActive = false;
-    if (captureInterval) clearInterval(captureInterval);
+    if (captureInterval) {
+        clearInterval(captureInterval);
+        captureInterval = null;
+    }
+    if (nextCaptureTimer) {
+        clearTimeout(nextCaptureTimer);
+        nextCaptureTimer = null;
+    }
     if (webcamStream) {
         webcamStream.getTracks().forEach(track => track.stop());
         webcamStream = null;
@@ -307,23 +317,45 @@ function syncCanvasSize() {
 
 function startCaptureLoop() {
     if (captureInterval) clearInterval(captureInterval);
-    captureInterval = setInterval(captureAndSendFrame, WEBCAM_INTERVAL_MS);
+    if (nextCaptureTimer) clearTimeout(nextCaptureTimer);
+    captureInterval = setInterval(() => {
+        if (webcamActive && !isProcessing) {
+            captureAndSendFrame();
+        }
+    }, WEBCAM_INTERVAL_MS);
     captureAndSendFrame();
 }
 
 async function captureAndSendFrame() {
     if (!webcamActive || isProcessing) return;
     const video = elements.webcamVideo;
-    if (video.readyState < 2) return;
+    if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) return;
 
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = video.videoWidth;
-    tempCanvas.height = video.videoHeight;
-    const tempCtx = tempCanvas.getContext('2d');
-    tempCtx.drawImage(video, 0, 0);
+    const vWidth = video.videoWidth;
+    const vHeight = video.videoHeight;
 
-    const imageData = tempCanvas.toDataURL('image/jpeg', JPEG_QUALITY);
-    await sendForRecognition(imageData, 'webcam');
+    // Skala resolusi pengiriman frame agar payload sangat ringan dan transmisi instan
+    let sendWidth = vWidth;
+    let sendHeight = vHeight;
+    if (sendWidth > WEBCAM_MAX_WIDTH) {
+        const scale = WEBCAM_MAX_WIDTH / sendWidth;
+        sendWidth = Math.round(sendWidth * scale);
+        sendHeight = Math.round(sendHeight * scale);
+    }
+
+    if (!captureCanvas) {
+        captureCanvas = document.createElement('canvas');
+    }
+    captureCanvas.width = sendWidth;
+    captureCanvas.height = sendHeight;
+    const tempCtx = captureCanvas.getContext('2d', { willReadFrequently: true });
+    tempCtx.drawImage(video, 0, 0, sendWidth, sendHeight);
+
+    const imageData = captureCanvas.toDataURL('image/jpeg', JPEG_QUALITY);
+    const scaleFactorX = vWidth / sendWidth;
+    const scaleFactorY = vHeight / sendHeight;
+
+    await sendForRecognition(imageData, 'webcam', scaleFactorX, scaleFactorY);
 }
 
 function handleFileUpload(event) {
@@ -338,17 +370,43 @@ function processUploadedFile(file) {
     }
     const reader = new FileReader();
     reader.onload = async (e) => {
-        const imageData = e.target.result;
-        elements.uploadedImage.src = imageData;
-        elements.uploadZone.classList.add('hidden');
-        elements.uploadedPreview.classList.remove('hidden');
+        const rawData = e.target.result;
+        const tempImg = new Image();
+        tempImg.onload = async () => {
+            const MAX_UPLOAD_DIM = 1200;
+            let w = tempImg.naturalWidth;
+            let h = tempImg.naturalHeight;
+            let sendData = rawData;
 
-        elements.uploadedImage.onload = async () => {
-            const img = elements.uploadedImage;
-            elements.uploadOverlayCanvas.width = img.naturalWidth;
-            elements.uploadOverlayCanvas.height = img.naturalHeight;
-            await sendForRecognition(imageData, 'upload');
+            if (Math.max(w, h) > MAX_UPLOAD_DIM) {
+                const s = MAX_UPLOAD_DIM / Math.max(w, h);
+                const rw = Math.round(w * s);
+                const rh = Math.round(h * s);
+                const c = document.createElement('canvas');
+                c.width = rw;
+                c.height = rh;
+                const cx = c.getContext('2d');
+                cx.drawImage(tempImg, 0, 0, rw, rh);
+                sendData = c.toDataURL('image/jpeg', 0.85);
+            }
+
+            elements.uploadedImage.src = rawData;
+            elements.uploadZone.classList.add('hidden');
+            elements.uploadedPreview.classList.remove('hidden');
+
+            const onImageReady = async () => {
+                const img = elements.uploadedImage;
+                elements.uploadOverlayCanvas.width = img.naturalWidth;
+                elements.uploadOverlayCanvas.height = img.naturalHeight;
+                await sendForRecognition(sendData, 'upload');
+            };
+
+            elements.uploadedImage.onload = onImageReady;
+            if (elements.uploadedImage.complete) {
+                onImageReady();
+            }
         };
+        tempImg.src = rawData;
     };
     reader.readAsDataURL(file);
 }
@@ -363,7 +421,7 @@ function removeUpload() {
     clearResults();
 }
 
-async function sendForRecognition(imageData, source) {
+async function sendForRecognition(imageData, source, scaleFactorX = 1, scaleFactorY = 1) {
     if (isProcessing) return;
     isProcessing = true;
     if (elements.processingIndicator) elements.processingIndicator.classList.remove('hidden');
@@ -379,11 +437,24 @@ async function sendForRecognition(imageData, source) {
         if (data.error) {
             console.error('Recognition error:', data.error);
         } else {
-            displayResults(data.faces, data.processing_time_ms);
+            let faces = data.faces || [];
+            if (scaleFactorX !== 1 || scaleFactorY !== 1) {
+                faces = faces.map(f => ({
+                    ...f,
+                    bbox: {
+                        x: Math.round(f.bbox.x * scaleFactorX),
+                        y: Math.round(f.bbox.y * scaleFactorY),
+                        w: Math.round(f.bbox.w * scaleFactorX),
+                        h: Math.round(f.bbox.h * scaleFactorY)
+                    }
+                }));
+            }
+
+            displayResults(faces, data.processing_time_ms);
             if (source === 'webcam') {
-                drawBoundingBoxes(elements.overlayCanvas, data.faces, true);
+                drawBoundingBoxes(elements.overlayCanvas, faces, true);
             } else {
-                drawBoundingBoxes(elements.uploadOverlayCanvas, data.faces, false);
+                drawBoundingBoxes(elements.uploadOverlayCanvas, faces, false);
             }
         }
     } catch (err) {
@@ -391,6 +462,12 @@ async function sendForRecognition(imageData, source) {
     } finally {
         isProcessing = false;
         if (elements.processingIndicator) elements.processingIndicator.classList.add('hidden');
+
+        // Pemicu frame berikutnya secara adaptif & cepat jika mode webcam aktif
+        if (webcamActive && source === 'webcam') {
+            if (nextCaptureTimer) clearTimeout(nextCaptureTimer);
+            nextCaptureTimer = setTimeout(captureAndSendFrame, 80);
+        }
     }
 }
 
