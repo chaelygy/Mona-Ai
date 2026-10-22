@@ -39,7 +39,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ENCODING_FILE = os.path.join(BASE_DIR, "face_encodings.pkl")
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 MODEL_NAME = "Facenet512"
-DETECTOR_BACKEND = "retinaface"
+DETECTOR_BACKEND = os.environ.get("DETECTOR_BACKEND", "yunet")
+FALLBACK_DETECTOR = "opencv"
 
 # Threshold fallback jika tidak ada di file pickle
 DEFAULT_THRESHOLD = 0.30
@@ -106,19 +107,29 @@ def load_face_data():
         print(f"  - Threshold     : {face_data.get('threshold', DEFAULT_THRESHOLD):.4f}")
         print(f"  - Orang         : {', '.join(face_data.get('person_names', []))}")
         
-        # Pre-warm model dengan dummy image jika belum di-warm
+        # Pre-warm model & detector dengan dummy image agar request pertama instan
         if not model_loaded:
-            print("[INFO] Pre-warming model DeepFace...")
+            print(f"[INFO] Pre-warming model DeepFace ({MODEL_NAME} + {DETECTOR_BACKEND})...")
             try:
-                dummy = np.zeros((160, 160, 3), dtype=np.uint8)
-                dummy[50:110, 50:110] = 128
-                DeepFace.represent(
-                    img_path=dummy,
-                    model_name=MODEL_NAME,
-                    detector_backend="skip",
-                    enforce_detection=False
-                )
-                print("[INFO] Model DeepFace siap!")
+                dummy = np.zeros((224, 224, 3), dtype=np.uint8)
+                cv2.circle(dummy, (112, 112), 45, (200, 200, 200), -1)
+                try:
+                    DeepFace.represent(
+                        img_path=dummy,
+                        model_name=MODEL_NAME,
+                        detector_backend=DETECTOR_BACKEND,
+                        enforce_detection=False,
+                        align=True
+                    )
+                except Exception:
+                    DeepFace.represent(
+                        img_path=dummy,
+                        model_name=MODEL_NAME,
+                        detector_backend=FALLBACK_DETECTOR,
+                        enforce_detection=False,
+                        align=True
+                    )
+                print("[INFO] Model DeepFace & Detektor siap!")
             except Exception as e:
                 print(f"[WARNING] Pre-warming: {e}")
         
@@ -210,45 +221,73 @@ def recognize_face_embedding(embedding):
 
 def process_image(img_array):
     """
-    Memproses gambar: deteksi wajah dan kenali setiap wajah.
+    Memproses gambar: deteksi wajah dan kenali setiap wajah dengan latensi ultra rendah.
     
     Returns: list of dict dengan info setiap wajah terdeteksi.
     """
     results = []
-    
+    if img_array is None or img_array.size == 0:
+        return results
+
+    h_orig, w_orig = img_array.shape[:2]
+    max_dim = 640
+    if max(h_orig, w_orig) > max_dim:
+        scale = max_dim / float(max(h_orig, w_orig))
+        target_w, target_h = int(w_orig * scale), int(h_orig * scale)
+        proc_img = cv2.resize(img_array, (target_w, target_h), interpolation=cv2.INTER_AREA)
+        inv_scale = 1.0 / scale
+    else:
+        proc_img = img_array
+        inv_scale = 1.0
+        target_w, target_h = w_orig, h_orig
+
     try:
-        # Deteksi dan ekstrak embedding wajah
-        representations = DeepFace.represent(
-            img_path=img_array,
-            model_name=MODEL_NAME,
-            detector_backend=DETECTOR_BACKEND,
-            enforce_detection=False,
-            align=True
-        )
+        # Deteksi dan ekstrak embedding wajah menggunakan detektor berkecepatan tinggi
+        try:
+            representations = DeepFace.represent(
+                img_path=proc_img,
+                model_name=MODEL_NAME,
+                detector_backend=DETECTOR_BACKEND,
+                enforce_detection=False,
+                align=True
+            )
+        except Exception as det_err:
+            print(f"[WARNING] Detektor {DETECTOR_BACKEND} bermasalah: {det_err}. Fallback ke {FALLBACK_DETECTOR}...")
+            representations = DeepFace.represent(
+                img_path=proc_img,
+                model_name=MODEL_NAME,
+                detector_backend=FALLBACK_DETECTOR,
+                enforce_detection=False,
+                align=True
+            )
 
         for rep in representations:
-            embedding = np.array(rep["embedding"])
-            
-            # Ambil koordinat wajah
             facial_area = rep.get("facial_area", {})
             x = facial_area.get("x", 0)
             y = facial_area.get("y", 0)
             w = facial_area.get("w", 0)
             h = facial_area.get("h", 0)
+
+            # Filter deteksi kosong: DeepFace mengembalikan seluruh frame jika wajah tidak ada
+            left_eye = facial_area.get("left_eye")
+            right_eye = facial_area.get("right_eye")
+            if left_eye is None and right_eye is None and (w >= target_w * 0.85 and h >= target_h * 0.85):
+                continue
+
+            embedding = np.array(rep["embedding"])
             
             # Kenali wajah
             name, confidence, distance = recognize_face_embedding(embedding)
             
-            # Hanya masukkan jika confidence > 0 atau ada wajah terdeteksi
             face_info = {
                 "name": name,
                 "confidence": round(confidence, 1),
                 "distance": round(float(distance), 4),
                 "bbox": {
-                    "x": int(x),
-                    "y": int(y),
-                    "w": int(w),
-                    "h": int(h)
+                    "x": int(round(x * inv_scale)),
+                    "y": int(round(y * inv_scale)),
+                    "w": int(round(w * inv_scale)),
+                    "h": int(round(h * inv_scale))
                 }
             }
             results.append(face_info)
@@ -337,19 +376,19 @@ def recognize():
             if "," in image_data:
                 image_data = image_data.split(",")[1]
             
-            # Decode base64
+            # Fast direct decode via OpenCV
             img_bytes = base64.b64decode(image_data)
-            img_pil = Image.open(BytesIO(img_bytes)).convert("RGB")
-            img_array = np.array(img_pil)
-            # Convert RGB to BGR for OpenCV compatibility
-            img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+            img_array = cv2.imdecode(np.frombuffer(img_bytes, dtype=np.uint8), cv2.IMREAD_COLOR)
+            if img_array is None:
+                return jsonify({"error": "Gagal mendekode gambar.", "faces": []}), 400
 
         # Mode 2: File upload
         elif "image" in request.files:
             file = request.files["image"]
-            img_pil = Image.open(file.stream).convert("RGB")
-            img_array = np.array(img_pil)
-            img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+            file_bytes = np.frombuffer(file.read(), dtype=np.uint8)
+            img_array = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+            if img_array is None:
+                return jsonify({"error": "File gambar tidak valid.", "faces": []}), 400
 
         else:
             return jsonify({

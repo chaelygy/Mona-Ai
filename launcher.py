@@ -23,6 +23,25 @@ def is_port_in_use(port):
         s.settimeout(1.0)
         return s.connect_ex(('127.0.0.1', port)) == 0
 
+def free_port(port=5000):
+    """Membersihkan proses lama yang mengunci port."""
+    try:
+        res = subprocess.run(f"netstat -ano | findstr :{port}", shell=True, capture_output=True, text=True)
+        for line in res.stdout.strip().splitlines():
+            parts = line.split()
+            if len(parts) >= 5 and "LISTENING" in parts:
+                pid = parts[-1]
+                subprocess.run(f"taskkill /F /PID {pid}", shell=True, capture_output=True, check=False)
+    except Exception:
+        pass
+
+def kill_existing_cloudflared():
+    """Mematikan cloudflared lama agar tunnel tidak bentrok antar-proyek."""
+    try:
+        subprocess.run("taskkill /F /IM cloudflared.exe", shell=True, capture_output=True, check=False)
+    except Exception:
+        pass
+
 def copy_to_clipboard(text):
     try:
         process = subprocess.Popen('clip', stdin=subprocess.PIPE, shell=True)
@@ -116,7 +135,25 @@ def main():
     signal.signal(signal.SIGINT, cleanup)
     signal.signal(signal.SIGTERM, cleanup)
 
-    # 1. Start Python Flask app if not already running on port 5000
+    # 0. Bersihkan proses cloudflared lama agar tidak bentrok
+    kill_existing_cloudflared()
+
+    # 1. Start Python Flask app (cek kepemilikan port 5000)
+    if is_port_in_use(5000):
+        try:
+            import urllib.request
+            import json
+            with urllib.request.urlopen("http://127.0.0.1:5000/api/status", timeout=1.5) as resp:
+                data = json.loads(resp.read().decode())
+                is_mona = data.get("status") == "online"
+        except Exception:
+            is_mona = False
+
+        if not is_mona:
+            print("\n[1/2] Port 5000 terkunci oleh proses lain. Mereset port...")
+            free_port(5000)
+            time.sleep(1)
+
     if is_port_in_use(5000):
         print("\n[1/2] Backend AI Python sudah aktif di http://127.0.0.1:5000 (OK).")
     else:
